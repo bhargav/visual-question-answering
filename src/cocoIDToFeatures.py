@@ -12,7 +12,7 @@ import operator
 import sys
 import os
 import math
-
+import numpy as np
 #Usage : python cocoIDToFeatures.py <cocoID>
 #cocoID is from 1:123287
 
@@ -43,5 +43,4 @@ if __name__ == "__main__":
 	my_dict = {}
 	my_dict = generateDictionary(tfile)
 	featureVector = mapCocoIDToFeatureVector(my_dict,cocoID)
-    
-
+        np.asarray(featureVector)
