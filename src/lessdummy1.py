@@ -36,7 +36,7 @@ def getBOWVector(question, word_vec_dict):
 		vector = vector + getWordVector(word, word_vec_dict)
 	return vector
 
-def createOneHotFeature(questions):
+def createOneHotFeatures(questions):
 	wordFreq = {}
 	firstWordFreq = {}
 	secondWordFreq = {}
@@ -102,9 +102,36 @@ def getOneHotVector(question, oneHotFeatures):
 			featureVector[oneHotFeatures.index(word)] = 1
 	return featureVector
 
-def getQuestionVectors(imageID):
-	pass
+def createAnswerFeatures(annotations):
+	answerCount = {}
+	answerFeatures = [] 
+	for annotation in annotations:
+		answer = annotation['multiple_choice_answer'].split()
+		for word in answer:
+			if word in answerCount:
+				answerCount[word] += 1
+			else:
+				answerCount[word] = 1
+	sortedAnswerCount = sorted(answerCount.items(), key=operator.itemgetter(1), reverse = True)
+	index = 0
+	for word, count in sortedAnswerCount:
+		if (index > 1000):
+			break
+		index = index + 1
+		answerFeatures.append(word)
+	print answerFeatures
+	return answerFeatures
+	# print questions[1]
+	# for question in questions:
+	# 	question_split = question['question'].strip().replace('?',' ?').split()
+	# 	for 
 
+def getAnswerVector(answer, answerFeatures):
+	featureVector = np.zeros(len(answerFeatures))
+	for word in answer.strip().split(' '):
+		if word in answerFeatures:
+			featureVector[answerFeatures.index(word)] = 1
+	return featureVector
 
 
 def main():
@@ -115,11 +142,15 @@ def main():
 	vqaTrain = VQA(annFile, quesFile)
 	annotations = vqaTrain.dataset['annotations']
 	questions = vqaTrain.questions['questions']
-	oneHotFeatures = createOneHotFeature(questions)
+	oneHotFeatures = createOneHotFeatures(questions)
 	BOWVector = getBOWVector('Who is that pokemon?', word_vec_dict)
 	oneHotVector = getOneHotVector('Who is that pokemon?', oneHotFeatures)
+	answerFeatures = createAnswerFeatures(annotations)
 	print BOWVector
 	print oneHotVector
+	answerVector = getAnswerVector('It is charizard', answerFeatures)
+	print answerVector
+	# print annotations[1]
 	
 
 if __name__ == "__main__":
