@@ -6,14 +6,6 @@ from collections import OrderedDict
 import cocoIDToFeatures as pramod
 import scipy.io as sio
 
-## Bhargav
-from keras.models import Sequential
-from keras.layers.core import Dense, Dropout
-
-
-
-##
-
 sys.path.insert(0, './../VQA/PythonHelperTools')
 from vqaTools.vqa import VQA
 
@@ -169,20 +161,19 @@ def getMLPModel(input_size, output_size):
     return model
 
 def main():
-	glove_word_vec_file = './../glove/glove.6B.50d.txt'
-	word_vec_dict = readGloveData(glove_word_vec_file)
-	vqaTrain = VQA(annFile, quesFile)
-	annotations = vqaTrain.dataset['annotations']
-	questions = vqaTrain.questions['questions']
-	answerFeatures = createAnswerFeatures(annotations)
+    glove_word_vec_file = './../glove/glove.6B.300d.txt'
+    word_vec_dict = readGloveData(glove_word_vec_file)
+    vqaTrain = VQA(annFile, quesFile)
+    annotations = vqaTrain.dataset['annotations']
+    questions = vqaTrain.questions['questions']
+    answerFeatures = createAnswerFeatures(annotations)
 
-	## For getting image vectors
-	imageDict = pramod.generateDictionary(tfile)
-	feats = sio.loadmat('./../features/coco/vgg_feats.mat')['feats']
-	X_train = []
-	Y_train = []
-	##
-	for question in questions:
+    ## For getting image vectors
+    imageDict = pramod.generateDictionary(tfile)
+    feats = sio.loadmat('./../features/coco/vgg_feats.mat')['feats']
+    X_train = []
+    Y_train = []
+    for question in questions:
 		quesString = question['question'].replace('?', ' ?').split(' ')
 		wordVector = getBOWVector(quesString, word_vec_dict)
 		imgID = question['image_id']
@@ -197,18 +188,12 @@ def main():
 			temp_Y_train = answerVector
 			X_train.append(temp_X_train)
 			Y_train.append(temp_Y_train)
-			print len(X_train)
-			# print X_train
-			# print Y_train 
-		
 
+    train_x_file = open('../data/X_train_multiple.npy', 'w')
+    np.save(train_x_file, X_train)
 
-
-
-		# break
-	
-	# model = getMLPModel(len(X_train), len(Y_train))
-
+    test_x_file = open('../data/Y_train_multiple.npy', 'w')
+    np.save(test_x_file, Y_train)
 
 if __name__ == "__main__":
 	main()
