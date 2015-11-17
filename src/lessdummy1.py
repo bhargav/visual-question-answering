@@ -3,10 +3,11 @@ import json
 import numpy as np
 import operator
 from collections import OrderedDict
-sys.path.insert(0, './../PythonHelperTools')
+
+sys.path.insert(0, './../VQA/PythonHelperTools')
 from vqaTools.vqa import VQA
 
-dataDir='../../cs446-project'
+dataDir='../../cs446-project/data'
 taskType='OpenEnded'
 dataType='mscoco' # 'mscoco' for real and 'abstract_v002' for abstract
 dataSubType='train2014'
@@ -22,7 +23,7 @@ def readGloveData(glove_word_vec_file):
         line = line.strip().split()
         tag = line[0]
         vec = line[1:]
-        word_vec_dict[tag] = np.array(vec, dtype=float) 
+        word_vec_dict[tag] = np.array(vec, dtype=float)
     return word_vec_dict
 
 def getWordVector(word, word_vec_dict):
@@ -104,7 +105,7 @@ def getOneHotVector(question, oneHotFeatures):
 
 def createAnswerFeatures(annotations):
 	answerCount = {}
-	answerFeatures = [] 
+	answerFeatures = []
 	for annotation in annotations:
 		answer = annotation['multiple_choice_answer'].split()
 		for word in answer:
@@ -124,7 +125,7 @@ def createAnswerFeatures(annotations):
 	# print questions[1]
 	# for question in questions:
 	# 	question_split = question['question'].strip().replace('?',' ?').split()
-	# 	for 
+	# 	for
 
 def getAnswerVector(answer, answerFeatures):
 	featureVector = np.zeros(len(answerFeatures))
@@ -151,7 +152,7 @@ def main():
 	answerVector = getAnswerVector('It is charizard', answerFeatures)
 	print answerVector
 	# print annotations[1]
-	
+
 
 if __name__ == "__main__":
 	main()
