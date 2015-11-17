@@ -3,10 +3,26 @@ import json
 import numpy as np
 import operator
 from collections import OrderedDict
+import cocoIDToFeatures as pramod
+import scipy.io as sio
+
+## Bhargav
+from keras.models import Sequential
+from keras.layers.core import Dense, Dropout
+
+
+
+##
 
 sys.path.insert(0, './../VQA/PythonHelperTools')
 from vqaTools.vqa import VQA
 
+## For getting image vectors
+tfile = './../features/coco_vgg_IDMap.txt'
+
+
+
+##
 dataDir='../../cs446-project/data'
 taskType='MultipleChoice'
 dataType='mscoco' # 'mscoco' for real and 'abstract_v002' for abstract
@@ -107,7 +123,6 @@ def createAnswerFeatures(annotations):
 	answerCount = {}
 	answerFeatures = []
 	for annotation in annotations:
-		# print annotation
 		answer = annotation['multiple_choice_answer']
 		# print question
 		for word in answer.split():
@@ -137,25 +152,60 @@ def getAnswerVector(answer, answerFeatures):
 			featureVector[answerFeatures.index(word)] = 1
 	return featureVector
 
+def getMLPModel(input_size, output_size):
+    model = Sequential()
+
+    # Two hidden layers
+    model.add(Dense(1000, input_dim = input_size, init='uniform', activation='tanh'))
+    model.add(Dropout(0.5))
+    model.add(Dense(1000, input_dim = input_size, init='uniform', activation='tanh'))
+    model.add(Dropout(0.5))
+
+    # Output layer for probability
+    model.add(Dense(output_size, init='uniform', activation='softmax'))
+
+    model.compile(loss='mean_square_error', optimizer='sgd')
+
+    return model
 
 def main():
 	glove_word_vec_file = './../glove/glove.6B.50d.txt'
 	word_vec_dict = readGloveData(glove_word_vec_file)
-	# dummyVec = getWordVector('hi', word_vec_dict)
-	# print dummyVec
 	vqaTrain = VQA(annFile, quesFile)
 	annotations = vqaTrain.dataset['annotations']
 	questions = vqaTrain.questions['questions']
-	# print questions
-	oneHotFeatures = createOneHotFeatures(questions)
-	# BOWVector = getBOWVector('Who is that pokemon?', word_vec_dict)
-	# oneHotVector = getOneHotVector('Who is that pokemon?', oneHotFeatures)
 	answerFeatures = createAnswerFeatures(annotations)
-	# print BOWVector
-	# print oneHotVector
-	# answerVector = getAnswerVector('It is charizard', answerFeatures)
-	# print answerVector
-	# print annotations[1]
+
+	## For getting image vectors
+	imageDict = pramod.generateDictionary(tfile)
+	feats = sio.loadmat('./../features/coco/vgg_feats.mat')['feats']
+	X_train = []
+	Y_train = []
+	##
+	for question in questions:
+		quesString = question['question'].replace('?', ' ?').split(' ')
+		wordVector = getBOWVector(quesString, word_vec_dict)
+		imgID = question['image_id']
+		imageVector = np.asarray(feats[:,imageDict[imgID]])
+		anns = vqaTrain.loadQA(ids = [question['question_id']])
+		for ann in anns:
+			ansString = ann['multiple_choice_answer']
+			answerVector = getAnswerVector(ansString, answerFeatures)
+			temp_X_train = np.append(imageVector, wordVector)
+			# X_train.append(wordVector)
+			temp_Y_train = answerVector
+			X_train = np.append(X_train, temp_X_train)
+			Y_train = np.append(Y_train, temp_Y_train)
+			# print X_train
+			# print Y_train 
+
+
+
+
+
+		# break
+	
+	model = getMLPModel(len(X_train), len(Y_train))
 
 
 if __name__ == "__main__":
