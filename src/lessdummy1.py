@@ -189,23 +189,25 @@ def main():
 		imageVector = np.asarray(feats[:,imageDict[imgID]])
 		anns = vqaTrain.loadQA(ids = [question['question_id']])
 		for ann in anns:
+			# print quesString
 			ansString = ann['multiple_choice_answer']
 			answerVector = getAnswerVector(ansString, answerFeatures)
 			temp_X_train = np.append(imageVector, wordVector)
 			# X_train.append(wordVector)
 			temp_Y_train = answerVector
-			X_train = np.append(X_train, temp_X_train)
-			Y_train = np.append(Y_train, temp_Y_train)
+			X_train.append(temp_X_train)
+			Y_train.append(temp_Y_train)
+			print len(X_train)
 			# print X_train
 			# print Y_train 
-
+		
 
 
 
 
 		# break
 	
-	model = getMLPModel(len(X_train), len(Y_train))
+	# model = getMLPModel(len(X_train), len(Y_train))
 
 
 if __name__ == "__main__":
