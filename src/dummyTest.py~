@@ -1,9 +1,0 @@
-import sys
-sys.path.insert(0, './../PythonHelperTools')
-from vqaTools.vqa import VQA
-
-def main():
-	pass
-
-if __name__ == "__main__":
-	main()
