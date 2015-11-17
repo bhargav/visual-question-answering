@@ -13,8 +13,8 @@ import sys
 import os
 import math
 
-Usage : python cocoIDToFeatures.py <cocoID>
-cocoID is from 1:123287
+#Usage : python cocoIDToFeatures.py <cocoID>
+#cocoID is from 1:123287
 
 tfile = 'coco_vgg_IDMap.txt'
 def generateDictionary(tfile):
