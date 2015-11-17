@@ -3,6 +3,3 @@
 
 wget http://cs.stanford.edu/people/karpathy/deepimagesent/coco.zip
 unzip coco.zip -d .
-
-echo "coco/" >> .gitignore
-echo "coco.zip" >> .gitignore
