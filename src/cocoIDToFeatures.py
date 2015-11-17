@@ -30,10 +30,10 @@ def generateDictionary(tfile):
 def mapCocoIDToFeatureVector(my_dict,cocoID):
    mat_Dict = sio.loadmat('vgg_feats.mat')
    featureVectors = mat_Dict['feats']
-   return featureVectors[:,(cocoID-1)]
+   return np.asarray(featureVectors[:,my_dict[cocoID]])
 
 
-   
+
 
 
 
