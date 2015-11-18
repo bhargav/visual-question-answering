@@ -1,8 +1,8 @@
 import sys
-import json
 import numpy as np
 import operator
-from collections import OrderedDict
+import json
+
 import cocoIDToFeatures as pramod
 import scipy.io as sio
 
@@ -12,16 +12,15 @@ from vqaTools.vqa import VQA
 ## For getting image vectors
 tfile = './../features/coco_vgg_IDMap.txt'
 
-
-
 ##
-dataDir='../../cs446-project/data'
-taskType='MultipleChoice'
-dataType='mscoco' # 'mscoco' for real and 'abstract_v002' for abstract
-dataSubType='train2014'
-annFile='%s/Annotations/%s_%s_annotations.json'%(dataDir, dataType, dataSubType)
-quesFile='%s/Questions/%s_%s_%s_questions.json'%(dataDir, taskType, dataType, dataSubType)
-imgDir = '%s/Images/%s/%s/' %(dataDir, dataType, dataSubType)
+dataDir = '../../cs446-project/data'
+taskType = 'MultipleChoice'
+dataType = 'mscoco' # 'mscoco' for real and 'abstract_v002' for abstract
+dataSubType = 'train2014'
+annFile = '%s/Annotations/%s_%s_annotations.json' % (dataDir, dataType, dataSubType)
+quesFile = '%s/Questions/%s_%s_%s_questions.json' % (dataDir, taskType, dataType, dataSubType)
+imgDir = '%s/Images/%s/%s/' % (dataDir, dataType, dataSubType)
+
 
 def readGloveData(glove_word_vec_file):
     f = open(glove_word_vec_file, 'r')
@@ -34,16 +33,19 @@ def readGloveData(glove_word_vec_file):
         word_vec_dict[tag] = np.array(vec, dtype=float)
     return word_vec_dict
 
+
 def getWordVector(word, word_vec_dict):
 	if word in word_vec_dict:
 		return word_vec_dict[word]
 	return np.zeros_like(word_vec_dict['hi'])
+
 
 def getBOWVector(question, word_vec_dict):
 	vector = np.zeros_like(word_vec_dict['hi'])
 	for word in question:
 		vector = vector + getWordVector(word, word_vec_dict)
 	return vector
+
 
 def createOneHotFeatures(questions):
 	wordFreq = {}
@@ -104,12 +106,14 @@ def createOneHotFeatures(questions):
 		features.append(word)
 	return features
 
+
 def getOneHotVector(question, oneHotFeatures):
 	featureVector = np.zeros(len(oneHotFeatures))
 	for word in question.strip().replace('?', ' ?').split(' '):
 		if word in oneHotFeatures:
 			featureVector[oneHotFeatures.index(word)] = 1
 	return featureVector
+
 
 def createAnswerFeatures(annotations):
 	answerCount = {}
@@ -132,10 +136,7 @@ def createAnswerFeatures(annotations):
 	# print len(answerFeatures)
 	# print answerFeatures
 	return answerFeatures
-	# print questions[1]
-	# for question in questions:
-	# 	question_split = question['question'].strip().replace('?',' ?').split()
-	# 	for
+
 
 def getAnswerVector(answer, answerFeatures):
 	featureVector = np.zeros(len(answerFeatures))
@@ -144,21 +145,6 @@ def getAnswerVector(answer, answerFeatures):
 			featureVector[answerFeatures.index(word)] = 1
 	return featureVector
 
-def getMLPModel(input_size, output_size):
-    model = Sequential()
-
-    # Two hidden layers
-    model.add(Dense(1000, input_dim = input_size, init='uniform', activation='tanh'))
-    model.add(Dropout(0.5))
-    model.add(Dense(1000, input_dim = input_size, init='uniform', activation='tanh'))
-    model.add(Dropout(0.5))
-
-    # Output layer for probability
-    model.add(Dense(output_size, init='uniform', activation='softmax'))
-
-    model.compile(loss='mean_square_error', optimizer='sgd')
-
-    return model
 
 def main():
     glove_word_vec_file = './../glove/glove.6B.300d.txt'
@@ -168,32 +154,37 @@ def main():
     questions = vqaTrain.questions['questions']
     answerFeatures = createAnswerFeatures(annotations)
 
-    ## For getting image vectors
+    # Dumping answer features
+    answer_features_list = open('answer_feature_list.json', 'w')
+    answer_features_list.write(json.dumps(answerFeatures))
+
+    # For getting image vectors
     imageDict = pramod.generateDictionary(tfile)
     feats = sio.loadmat('./../features/coco/vgg_feats.mat')['feats']
-    X_train = []
-    Y_train = []
+
+    data = []
+
     for question in questions:
-		quesString = question['question'].replace('?', ' ?').split(' ')
-		wordVector = getBOWVector(quesString, word_vec_dict)
-		imgID = question['image_id']
-		imageVector = np.asarray(feats[:,imageDict[imgID]])
-		anns = vqaTrain.loadQA(ids = [question['question_id']])
-		for ann in anns:
-			# print quesString
-			ansString = ann['multiple_choice_answer']
-			answerVector = getAnswerVector(ansString, answerFeatures)
-			temp_X_train = np.append(imageVector, wordVector)
-			# X_train.append(wordVector)
-			temp_Y_train = answerVector
-			X_train.append(temp_X_train)
-			Y_train.append(temp_Y_train)
+        quesItem = {}
 
-    train_x_file = open('../data/X_train_multiple.npy', 'w')
-    np.save(train_x_file, X_train)
+        imgID = question['image_id']
+        quesItem['image_id'] = imgID
+        quesItem['question'] = question['question'].replace('?', ' ?').split(' ')
 
-    test_x_file = open('../data/Y_train_multiple.npy', 'w')
-    np.save(test_x_file, Y_train)
+        annotations = vqaTrain.loadQA(ids = [question['question_id']])
+
+        if len(annotations) != 1:
+            print imgID, " has annotations ", len(annotations)
+
+        for ann in annotations:
+            quesItemCopy = dict(quesItem)
+            ansString = ann['multiple_choice_answer']
+            quesItemCopy['answer'] = ansString
+            data.append(quesItemCopy)
+
+    output_data_file = open('preprocessed_data.json', 'w')
+    output_data_file.write(json.dumps(data))
+    output_data_file.close()
 
 if __name__ == "__main__":
-	main()
+    main()
