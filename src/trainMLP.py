@@ -9,6 +9,8 @@ from keras.layers.core import Dense, Dropout
 import numpy as np
 import scipy.io as sio
 
+import argparse
+
 import lessdummy1
 import cocoIDToFeatures
 
@@ -34,35 +36,22 @@ def getMLPModel(input_size, output_size):
     # Output layer for probability
     model.add(Dense(output_size, init='uniform', activation='softmax'))
 
-    model.compile(loss='mean_square_error', optimizer='sgd')
+    model.compile(loss='mse', optimizer='sgd')
 
     return model
 
-
 def main():
-    glove_word_vec_file = './../glove/glove.6B.50d.txt'
-    word_vec_dict = lessdummy1.readGloveData(glove_word_vec_file)
-    image_mapping_dict = cocoIDToFeatures.generateDictionary(tfile)
-    matlab_images = sio.loadmat('../features/coco/vgg_feats.mat')['feats']
-    vqaTrain = VQA(annFile, quesFile)
+    parser = argparse.ArgumentParser(description="MLP for ML-Project")
+    parser.add_argument('--train_data_file')
+    parser.add_argument('--train_label_file')
 
-    anns = vqaTrain.dataset['annotations']
-    questions = vqaTrain.questions['questions']
+    args = parser.parse_args()
 
-    for x in range(1):
-        ann = anns[0]
-        imageId = ann['image_id']
-        print ann
+    data = np.load(open(args.train_data_file, 'r'))
+    label = np.load(open(args.train_label_file, 'r'))
 
-        imagearray = np.asarray(matlab_images[:, image_mapping_dict[imageId]])
-        print imagearray.shape
-
-
-
-
-
-    # mlp_model = getMLPModel()
-
+    model = getMLPModel(data.shape[1], label.shape[1])
+    model.fit(X=data, y=label, verbose=True)
 
 if __name__ == "__main__":
     main()
