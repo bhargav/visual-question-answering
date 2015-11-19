@@ -32,13 +32,6 @@ annFile = '%s/Annotations/%s_%s_annotations.json' % (dataDir, dataType, dataSubT
 quesFile = '%s/Questions/%s_%s_%s_questions.json' % (dataDir, taskType, dataType, dataSubType)
 imgDir = '%s/Images/%s/%s/' % (dataDir, dataType, dataSubType)
 
-dataDir2 = '../../cs446-project/data'
-taskType2 = 'MultipleChoice'
-dataType2 = 'mscoco' # 'mscoco' for real and 'abstract_v002' for abstract
-dataSubType2 = 'val2014'
-annFile2 = '%s/Annotations/%s_%s_annotations.json' % (dataDir2, dataType2, dataSubType2)
-quesFile2 = '%s/Questions/%s_%s_%s_questions.json' % (dataDir2, taskType2, dataType, dataSubType2)
-imgDir2 = '%s/Images/%s/%s/' % (dataDir2, dataType2, dataSubType2)
 
 
 
@@ -227,54 +220,6 @@ def main():
 
 
 
-
-
-
-
-
-
-    vqaVal = VQA(annFile2, quesFile2)
-    annotations = vqaVal.dataset['annotations']
-    questions = vqaVal.questions['questions']
-    FILE_INDEX = 0
-    for question in questions:
-        questionVector = getBOWVector(question['question'].strip().replace('?', ' ?').split(), word_vec_dict)
-        imgID = question['image_id']
-        imageVector = np.asarray(feats[:,imageDict[imgID]])
-        # quesItem['image_id'] = imgID
-        # quesItem['question'] = question['question'].replace('?', ' ?').split(' ')
-        annotations = vqaVal.loadQA(ids = [question['question_id']])
-        for annotation in annotations:
-        	ansString = annotation['multiple_choice_answer']
-        	answerVector = getAnswerVector(ansString, answerFeatures)
-        	temp_X_test = np.append(imageVector, questionVector)
-        	temp_Y_test = answerVector
-        	X_test.append(temp_X_test)
-        	Y_test.append(temp_Y_test)
-        	if len(X_test) >= FILE_LIMIT:
-        		test_x_file = open(FILE_PATH+X_TEST_FILE_NAME+str(FILE_INDEX)+'.npy', 'w')
-        		test_y_file = open(FILE_PATH+Y_TEST_FILE_NAME+str(FILE_INDEX)+'.npy', 'w')
-        		np.save(test_x_file, X_test)
-        		np.save(test_y_file, Y_test)
-        		X_test = []
-        		Y_test = []
-        		FILE_INDEX = FILE_INDEX + 1
-        	# print len(X_train)
-        # if len(annotations) != 1:
-            # print imgID, " has annotations ", len(annotations)
-
-        # for ann in annotations:
-            # quesItemCopy = dict(quesItem)
-            # ansString = ann['multiple_choice_answer']
-            # quesItemCopy['answer'] = ansString
-            # data.append(quesItemCopy)
-    if len(X_test) > 0:
-      	test_x_file = open(FILE_PATH+X_TEST_FILE_NAME+str(FILE_INDEX)+'.npy', 'w')
-       	test_y_file = open(FILE_PATH+Y_TEST_FILE_NAME+str(FILE_INDEX)+'.npy', 'w')
-       	np.save(test_x_file, X_test)
-       	np.save(test_y_file, Y_test)
-       	X_test = []
-       	Y_test = []
 
     # output_data_file = open('preprocessed_data.json', 'w')
     # output_data_file.write(json.dumps(data))
