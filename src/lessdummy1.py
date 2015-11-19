@@ -13,6 +13,17 @@ from vqaTools.vqa import VQA
 tfile = './../features/coco_vgg_IDMap.txt'
 
 ##
+
+## GLOBAL CONSTANTS
+FILE_LIMIT = 50000
+FILE_PATH = './../data/'
+X_TRAIN_FILE_NAME = 'X_train'
+Y_TRAIN_FILE_NAME = 'Y_train'
+X_TEST_FILE_NAME = 'X_test'
+Y_TEST_FILE_NAME = 'Y_test'
+
+##
+
 dataDir = '../../cs446-project/data'
 taskType = 'MultipleChoice'
 dataType = 'mscoco' # 'mscoco' for real and 'abstract_v002' for abstract
@@ -20,6 +31,15 @@ dataSubType = 'train2014'
 annFile = '%s/Annotations/%s_%s_annotations.json' % (dataDir, dataType, dataSubType)
 quesFile = '%s/Questions/%s_%s_%s_questions.json' % (dataDir, taskType, dataType, dataSubType)
 imgDir = '%s/Images/%s/%s/' % (dataDir, dataType, dataSubType)
+
+dataDir2 = '../../cs446-project/data'
+taskType2 = 'MultipleChoice'
+dataType2 = 'mscoco' # 'mscoco' for real and 'abstract_v002' for abstract
+dataSubType2 = 'val2014'
+annFile2 = '%s/Annotations/%s_%s_annotations.json' % (dataDir2, dataType2, dataSubType2)
+quesFile2 = '%s/Questions/%s_%s_%s_questions.json' % (dataDir2, taskType2, dataType, dataSubType2)
+imgDir2 = '%s/Images/%s/%s/' % (dataDir2, dataType2, dataSubType2)
+
 
 
 def readGloveData(glove_word_vec_file):
@@ -33,19 +53,16 @@ def readGloveData(glove_word_vec_file):
         word_vec_dict[tag] = np.array(vec, dtype=float)
     return word_vec_dict
 
-
 def getWordVector(word, word_vec_dict):
 	if word in word_vec_dict:
 		return word_vec_dict[word]
 	return np.zeros_like(word_vec_dict['hi'])
-
 
 def getBOWVector(question, word_vec_dict):
 	vector = np.zeros_like(word_vec_dict['hi'])
 	for word in question:
 		vector = vector + getWordVector(word, word_vec_dict)
 	return vector
-
 
 def createOneHotFeatures(questions):
 	wordFreq = {}
@@ -106,14 +123,12 @@ def createOneHotFeatures(questions):
 		features.append(word)
 	return features
 
-
 def getOneHotVector(question, oneHotFeatures):
 	featureVector = np.zeros(len(oneHotFeatures))
 	for word in question.strip().replace('?', ' ?').split(' '):
 		if word in oneHotFeatures:
 			featureVector[oneHotFeatures.index(word)] = 1
 	return featureVector
-
 
 def createAnswerFeatures(annotations):
 	answerCount = {}
@@ -137,14 +152,12 @@ def createAnswerFeatures(annotations):
 	# print answerFeatures
 	return answerFeatures
 
-
 def getAnswerVector(answer, answerFeatures):
 	featureVector = np.zeros(len(answerFeatures))
 	for word in answer.strip().split(' '):
 		if word in answerFeatures:
 			featureVector[answerFeatures.index(word)] = 1
 	return featureVector
-
 
 def main():
     glove_word_vec_file = './../glove/glove.6B.300d.txt'
@@ -163,28 +176,109 @@ def main():
     feats = sio.loadmat('./../features/coco/vgg_feats.mat')['feats']
 
     data = []
-
+    X_train = []
+    Y_train = []
+    X_test = []
+    Y_test = []
+    FILE_INDEX = 0
     for question in questions:
-        quesItem = {}
-
+        # quesItem = {}
+        # print question
+        questionVector = getBOWVector(question['question'].strip().replace('?', ' ?').split(), word_vec_dict)
         imgID = question['image_id']
-        quesItem['image_id'] = imgID
-        quesItem['question'] = question['question'].replace('?', ' ?').split(' ')
-
+        imageVector = np.asarray(feats[:,imageDict[imgID]])
+        # quesItem['image_id'] = imgID
+        # quesItem['question'] = question['question'].replace('?', ' ?').split(' ')
         annotations = vqaTrain.loadQA(ids = [question['question_id']])
+        for annotation in annotations:
+        	ansString = annotation['multiple_choice_answer']
+        	answerVector = getAnswerVector(ansString, answerFeatures)
+        	temp_X_train = np.append(imageVector, questionVector)
+        	temp_Y_train = answerVector
+        	X_train.append(temp_X_train)
+        	Y_train.append(temp_Y_train)
+        	if len(X_train) >= FILE_LIMIT:
+        		train_x_file = open(FILE_PATH+X_TRAIN_FILE_NAME+str(FILE_INDEX)+'.npy', 'w')
+        		train_y_file = open(FILE_PATH+Y_TRAIN_FILE_NAME+str(FILE_INDEX)+'.npy', 'w')
+        		np.save(train_x_file, X_train)
+        		np.save(train_y_file, Y_train)
+        		X_train = []
+        		Y_train = []
+        		FILE_INDEX = FILE_INDEX + 1
+        	# print len(X_train)
+        # if len(annotations) != 1:
+            # print imgID, " has annotations ", len(annotations)
 
-        if len(annotations) != 1:
-            print imgID, " has annotations ", len(annotations)
+        # for ann in annotations:
+            # quesItemCopy = dict(quesItem)
+            # ansString = ann['multiple_choice_answer']
+            # quesItemCopy['answer'] = ansString
+            # data.append(quesItemCopy)
+    if len(X_train) > 0:
+      	train_x_file = open(FILE_PATH+X_TRAIN_FILE_NAME+str(FILE_INDEX)+'.npy', 'w')
+       	train_y_file = open(FILE_PATH+Y_TRAIN_FILE_NAME+str(FILE_INDEX)+'.npy', 'w')
+       	np.save(train_x_file, X_train)
+       	np.save(train_y_file, Y_train)
+       	X_train = []
+       	Y_train = []
 
-        for ann in annotations:
-            quesItemCopy = dict(quesItem)
-            ansString = ann['multiple_choice_answer']
-            quesItemCopy['answer'] = ansString
-            data.append(quesItemCopy)
 
-    output_data_file = open('preprocessed_data.json', 'w')
-    output_data_file.write(json.dumps(data))
-    output_data_file.close()
+    
+
+
+
+
+
+
+
+
+
+    vqaVal = VQA(annFile2, quesFile2)
+    annotations = vqaVal.dataset['annotations']
+    questions = vqaVal.questions['questions']
+    FILE_INDEX = 0
+    for question in questions:
+        questionVector = getBOWVector(question['question'].strip().replace('?', ' ?').split(), word_vec_dict)
+        imgID = question['image_id']
+        imageVector = np.asarray(feats[:,imageDict[imgID]])
+        # quesItem['image_id'] = imgID
+        # quesItem['question'] = question['question'].replace('?', ' ?').split(' ')
+        annotations = vqaVal.loadQA(ids = [question['question_id']])
+        for annotation in annotations:
+        	ansString = annotation['multiple_choice_answer']
+        	answerVector = getAnswerVector(ansString, answerFeatures)
+        	temp_X_test = np.append(imageVector, questionVector)
+        	temp_Y_test = answerVector
+        	X_test.append(temp_X_test)
+        	Y_test.append(temp_Y_test)
+        	if len(X_test) >= FILE_LIMIT:
+        		test_x_file = open(FILE_PATH+X_TEST_FILE_NAME+str(FILE_INDEX)+'.npy', 'w')
+        		test_y_file = open(FILE_PATH+Y_TEST_FILE_NAME+str(FILE_INDEX)+'.npy', 'w')
+        		np.save(test_x_file, X_test)
+        		np.save(test_y_file, Y_test)
+        		X_test = []
+        		Y_test = []
+        		FILE_INDEX = FILE_INDEX + 1
+        	# print len(X_train)
+        # if len(annotations) != 1:
+            # print imgID, " has annotations ", len(annotations)
+
+        # for ann in annotations:
+            # quesItemCopy = dict(quesItem)
+            # ansString = ann['multiple_choice_answer']
+            # quesItemCopy['answer'] = ansString
+            # data.append(quesItemCopy)
+    if len(X_test) > 0:
+      	test_x_file = open(FILE_PATH+X_TEST_FILE_NAME+str(FILE_INDEX)+'.npy', 'w')
+       	test_y_file = open(FILE_PATH+Y_TEST_FILE_NAME+str(FILE_INDEX)+'.npy', 'w')
+       	np.save(test_x_file, X_test)
+       	np.save(test_y_file, Y_test)
+       	X_test = []
+       	Y_test = []
+
+    # output_data_file = open('preprocessed_data.json', 'w')
+    # output_data_file.write(json.dumps(data))
+    # output_data_file.close()
 
 if __name__ == "__main__":
     main()
