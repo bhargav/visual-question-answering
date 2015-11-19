@@ -139,6 +139,7 @@ def writeAnsCountToFile(sortedAnswerCount):
 			return
 		index = index + 1
 		handler.write(' '.join(str(r) for r in row) + "\n")
+
 def createAnswerFeatures(annotations):
 	answerCount = {}
 	answerFeatures = []
