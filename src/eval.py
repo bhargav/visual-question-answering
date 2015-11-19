@@ -1,0 +1,34 @@
+import numpy as np
+import json
+## Bhargav
+from keras.models import Sequential, model_from_json
+from keras.layers.core import Dense, Dropout
+##
+
+def evalResults():
+	modelReader = open('./anythong2.json')
+	json_read = modelReader.read()
+	model = model_from_json(json_read)
+	print "yoyo"
+	model.load_weights('./../data/super_model2.h5py')
+	x_test = np.load(open('./../data/X_test_multiple.npy', 'r'))
+	y_test = np.load(open('./../data/Y_test_multiple.npy', 'r'))
+	# print model.predict(x_test[0])
+	total = 0.0
+	correct = 0.0
+	predictions = model.predict_classes(x_test)
+	for i in range(0, len(predictions)):
+		print predictions[i]
+		if sum(y_test[i] > 0):
+			total += 1
+			if (y_test[i][predictions[i]] == 1):
+				correct += 1
+			# if 
+	print correct/total
+	# print model.predict_proba(x_test[0:1])
+    
+def main():
+	evalResults()
+
+if __name__ == "__main__":
+	main()
