@@ -63,8 +63,8 @@ def evalResults():
 
 
 	resultsDicts = []
-
-
+	questionTypeResult = {}
+	answerTypeResult = {}
 
 	x_test = []
 	y_test = []
@@ -93,22 +93,46 @@ def evalResults():
 			y_test = np.asarray([temp_y_test]) 	
 			predictions = model.predict_classes(x_test, verbose = False)
 			temp_dict['predAns'] = answerFeatures[predictions[0]]
+
+			if annotation['answer_type'] in answerTypeResult:
+				answerTypeResult[annotation['answer_type']][1] = answerTypeResult[annotation['answer_type']][1] + 1
+			else:
+				answerTypeResult[annotation['answer_type']] = [0, 1]
+
+			if annotation['question_type'] in questionTypeResult:
+				questionTypeResult[annotation['question_type']][1] = questionTypeResult[annotation['question_type']][1] + 1
+			else:
+				questionTypeResult[annotation['question_type']] = [0, 1]
 			for i in range(0, len(predictions)):
 				if sum(y_test[i] > 0):
 					total += 1
 				if (y_test[i][predictions[i]] == 1):
 					correct += 1
+					questionTypeResult[annotation['question_type']][0] = questionTypeResult[annotation['question_type']][0] + 1
+					answerTypeResult[annotation['answer_type']][0] = answerTypeResult[annotation['answer_type']][0] + 1
 					temp_dict['correct'] = True
 				else:
 					temp_dict['correct'] = False
 			# if 
 			resultsDicts.append(temp_dict)
-	writer = open('./../data/results.txt', 'w')
-	json_dump = json.dumps(resultsDicts)
-	writer.write(json_dump)
 	print correct/total
 	# print model.predict_proba(x_test[0:1])
-    
+	for key, value in questionTypeResult.iteritems():
+		questionTypeResult[key].append(value[0] / value[1])
+		print key + ' ' + str(value[0]) + ' ' + str(value[1]) + ' ' + str(value[0]/value[1])
+	for key, value in answerTypeResult.iteritems():
+		answerTypeResult[key].append(value[0] / value[1])
+		print key + ' ' + str(value[0]) + ' ' + str(value[1]) + ' ' + str(value[0]/value[1])	
+	writer = open('./../data/results.txt', 'w')
+	writer2 = open('./../data/questionTypeResult.txt', 'w')
+	writer3 = open('./../data/answerTypeResult.txt', 'w')
+	json_dump = json.dumps(resultsDicts)
+	json_dump2 = json.dumps(questionTypeResult)
+	json_dump3 = json.dumps(answerTypeResult)
+	writer.write(json_dump)
+	writer2.write(json_dump2)
+	writer3.write(json_dump3)
+	
 def main():
 	evalResults()
 
