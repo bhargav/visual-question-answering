@@ -12,7 +12,8 @@ from vqaTools.vqa import VQA
 ## For getting image vectors
 tfile = './../features/coco_vgg_IDMap.txt'
 
-##
+## File for storing <word,count> tuples
+handler = open('answer_count.txt', 'w')
 
 ## GLOBAL CONSTANTS
 FILE_LIMIT = 50000
@@ -123,6 +124,14 @@ def getOneHotVector(question, oneHotFeatures):
 			featureVector[oneHotFeatures.index(word)] = 1
 	return featureVector
 
+def writeAnsCountToFile(sortedAnswerCount):
+	index = 0
+	for row in sortedAnswerCount:
+		if (index >= 1000):
+			return
+		index = index + 1
+		handler.write(' '.join(str(r) for r in row) + "\n")
+
 def createAnswerFeatures(annotations):
 	answerCount = {}
 	answerFeatures = []
@@ -143,6 +152,7 @@ def createAnswerFeatures(annotations):
 		answerFeatures.append(word)
 	# print len(answerFeatures)
 	# print answerFeatures
+	writeAnsCountToFile(sortedAnswerCount)
 	return answerFeatures
 
 def getAnswerVector(answer, answerFeatures):
