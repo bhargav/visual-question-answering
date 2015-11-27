@@ -1,3 +1,4 @@
 [submodule "VQA"]
 	path = VQA
 	url = https://github.com/VT-vision-lab/VQA.git
+	ignore=dirty
