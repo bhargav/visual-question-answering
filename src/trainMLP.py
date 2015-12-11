@@ -14,7 +14,7 @@ import argparse
 
 import cocoIDToFeatures as pramod
 
-dataDir = '../../cs446-project/data'
+dataDir = './../VQA'
 taskType = 'MultipleChoice'
 dataType = 'mscoco'  # 'mscoco' for real and 'abstract_v002' for abstract
 dataSubType = 'train2014'
@@ -36,68 +36,40 @@ def getMLPModel(input_size, output_size):
     # Output layer for probability
     model.add(Dense(output_size, init='uniform', activation='softmax'))
 
-    model.compile(loss='mse', optimizer='sgd')
+    model.compile(loss='categorical_crossentropy', optimizer='rmsprop')
 
     return model
 
 
 def main():
     parser = argparse.ArgumentParser(description="MLP for ML-Project")
-    parser.add_argument('--preprocessed_file')
-    parser.add_argument('--answer_vector_file')
-    parser.add_argument('--glove_file', default='./../glove/glove.6B.300d.txt')
+    parser.add_argument('--X_train_file')
+    parser.add_argument('--Y_train_file')
     parser.add_argument('--model_weights_file')
     parser.add_argument('--model_definition_file')
 
     args = parser.parse_args()
-
-    print "Reading GloVE and VGG raw files"
-
-    glove_word_vec_file = args.glove_file
-    word_vec_dict = lessdummy1.readGloveData(glove_word_vec_file)
-
-    imageDict = pramod.generateDictionary(tfile)
-    feats = sio.loadmat('./../features/coco/vgg_feats.mat')['feats']
-
-    print "Reading the data and creating features"
-
-    preprocessed_file = open(args.preprocessed_file, 'r')
-    data = json.loads(preprocessed_file.read())
-    answer_vector_file = open(args.answer_vector_file, 'r')
-    answerFeatureVector = json.loads(answer_vector_file.read())
-
-    preprocessed_file.close()
-    answer_vector_file.close()
-
-    X_train = []
-    Y_train = []
-
-    for ques in data:
-        image_id = ques['image_id']
-        image_vector = np.asarray(feats[:, imageDict[image_id]])
-        question_vector = lessdummy1.getBOWVector(ques['question'], word_vec_dict)
-        answer_vector = lessdummy1.getAnswerVector(ques['answer'], answerFeatureVector)
-
-        X_train.append(np.append(image_vector, question_vector))
-        Y_train.append(answer_vector)
-
-    word_vec_dict = None
-    imageDict = None
-    feats = None
-    answerFeatureVector = None
-    data = None
-    
-    print "Creating the MLP model"
-    model = getMLPModel(len(X_train[0]), len(Y_train[0]))
-
-    # Train for 10 iterations
-    model.fit(X=X_train, y=Y_train, verbose=True, nb_epoch=10)
-    model.save_weights(args.model_weights_file, overwrite=True)
-
+    FILE_INDEX = 0
+    FILE_INDEX_LIMIT = 4
+    # model = getMLPModel(len(X_train[0]), len(Y_train[0]))
+    # print "Reading GloVe and VGG raw files"
+    print '*******  Training on partition ' + str(FILE_INDEX) + ' *********'
+    X_train = np.load(open(args.X_train_file+str(FILE_INDEX)+'.npy', 'r'))
+    Y_train = np.load(open(args.Y_train_file+str(FILE_INDEX)+'.npy', 'r'))
+    FILE_INDEX += 1
+    model = getMLPModel(X_train.shape[1], Y_train.shape[1])    
+    model.fit(X = X_train, y = Y_train, verbose = True, nb_epoch = 100)
+    while FILE_INDEX <= FILE_INDEX_LIMIT:
+        X_train = np.load(open(args.X_train_file+str(FILE_INDEX)+'.npy', 'r'))
+        Y_train = np.load(open(args.Y_train_file+str(FILE_INDEX)+'.npy', 'r'))
+        print '*******  Training on partition ' + str(FILE_INDEX) + ' *********'
+        model.fit(X = X_train, y = Y_train, verbose = True, nb_epoch = 100)
+        FILE_INDEX += 1
+    model.save_weights(args.model_weights_file, overwrite = True)
     json_string = model.to_json()
     if args.model_definition_file != None:
-        file = open(args.model_definition_file, 'w')
-        file.write(json_string)
-
+        weightsWriter = open(args.model_definition_file, 'w')
+        weightsWriter.write(json_string)
+        
 if __name__ == "__main__":
     main()

@@ -40,10 +40,10 @@ def evalResults():
 	quesFile2 = '%s/Questions/%s_%s_%s_questions.json' % (dataDir2, taskType2, dataType2, dataSubType2)
 	imgDir2 = '%s/Images/%s/%s/' % (dataDir2, dataType2, dataSubType2)
 
-	modelReader = open('./../data/model_definition')
+	modelReader = open('./model_definition_100iter.json')
 	json_read = modelReader.read()
 	model = model_from_json(json_read)
-	model.load_weights('./../data/model_weights')
+	model.load_weights('./model_weights_100iter.h5py')
 	
 	vqaVal = VQA(annFile2, quesFile2)
 	FILE_INDEX = 0
@@ -59,7 +59,7 @@ def evalResults():
 	imageDict = pramod.generateDictionary(tfile)
 	feats = sio.loadmat('./../features/coco/vgg_feats.mat')['feats']
 	for quesID, annotation in vqaVal.qa.iteritems():
-		print quesID
+		# print quesID
 		# if quesID not in vqaVal.qqa.keys():
 		# 	continue
 		question = vqaVal.qqa[quesID]

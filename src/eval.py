@@ -19,7 +19,7 @@ dataSubType ='val2014'
 annFile     ='%s/Annotations/%s_%s_annotations.json'%(dataDir, dataType, dataSubType)
 quesFile    ='%s/Questions/%s_%s_%s_questions.json'%(dataDir, taskType, dataType, dataSubType)
 imgDir      ='%s/Images/%s/%s/' %(dataDir, dataType, dataSubType)
-resultType  ='first'
+resultType  ='second'
 fileTypes   = ['results', 'accuracy', 'evalQA', 'evalQuesType', 'evalAnsType'] 
 
 # An example result json file has been provided in './Results' folder.  
