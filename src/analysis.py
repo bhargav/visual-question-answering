@@ -1,4 +1,4 @@
-import numpy
+import numpy as np
 import matplotlib.pyplot as plt
 # import skimage.io as io
 import sys
@@ -12,8 +12,10 @@ from keras.layers.core import Dense, Dropout
 import cocoIDToFeatures as pramod
 import scipy.io as sio
 
+tfile = './../features/coco_vgg_IDMap.txt'
 
 sys.path.insert(0, './../VQA/PythonHelperTools')
+sys.path.insert(0, './../VQA/Images/train2014')
 # from vqa import VQA
 from vqaTools.vqa import VQA
 # from vqaEvaluation.vqaEval import VQAEval
@@ -64,6 +66,12 @@ newdataSubType = 'analysis1'
 outputQuestionFile = '%s/Questions/%s_%s_%s_questions.json'%(dataDir, taskType, dataType, newdataSubType)
 outputAnnotationFile = '%s/Annotations/%s_%s_questions.json'%(dataDir, dataType, newdataSubType)
 # vqaAnalysis = vqaVal
+newQuestion = 'yes'
+questionIndex = 0
+ids = vqaVal.getQuesIds()
+anns = vqaVal.loadQA(ids)
+
+
 if not os.path.exists(outputAnnotationFile):
 	outputQuestionWriter = open(outputQuestionFile, 'w')
 	outputAnnotationWriter = open(outputAnnotationFile, 'w')
@@ -72,12 +80,8 @@ if not os.path.exists(outputAnnotationFile):
 	outputAnnotations = {}
 
 
-	ids = vqaVal.getQuesIds()
-	anns = vqaVal.loadQA(ids)
-
-	newQuestion = 'yes'
-	questionIndex = 0
-
+	
+	
 	outputAnnotations['info'] = {}
 	outputAnnotations['info']['description'] = 'This is the dataset created for further analysis of the VQA task.'
 	outputAnnotations['info']['url'] = ' '
@@ -111,25 +115,25 @@ else:
 	outputAnnotations = json.load(outputAnnotationWriter)
 
 
-	modelReader = open('./model_definition_100iter.json')
-	json_read = modelReader.read()
-	model = model_from_json(json_read)
-	model.load_weights('./model_weights_100iter.h5py')
+modelReader = open('./model_definition_100iter.json')
+json_read = modelReader.read()
+model = model_from_json(json_read)
+model.load_weights('./model_weights_100iter.h5py')
 
-	glove_word_vec_file = './../glove/glove.6B.300d.txt'
-	word_vec_dict = ld.readGloveData(glove_word_vec_file)
-	imageDict = pramod.generateDictionary(tfile)
-	feats = sio.loadmat('./../features/coco/vgg_feats.mat')['feats']
+glove_word_vec_file = './../glove/glove.6B.300d.txt'
+word_vec_dict = ld.readGloveData(glove_word_vec_file)
+imageDict = pramod.generateDictionary(tfile)
+feats = sio.loadmat('./../features/coco/vgg_feats.mat')['feats']
 
 while newQuestion != 'no':
 	print '\n'
 	randomAnn = random.choice(anns)
-	origquestion = vqaVal.qqa[quesID]
+	origquestion = vqaVal.qqa[randomAnn['question_id']]
 	questionVector = ld.getBOWVector(origquestion['question'].strip().replace('?', ' ?').split(), word_vec_dict) 
-	imgID = annotation['image_id']
+	imgID = randomAnn['image_id']
 	imageVector = np.asarray(feats[:, imageDict[imgID]])
 	# temp_dict = {}
-	ansString = annotation['multiple_choice_answer']
+	ansString = randomAnn['multiple_choice_answer']
 	# temp_dict['question_id'] = quesID
 	# answerVector = ld.getAnswerVector(ansString, answerFeatures)
 	temp_x_test = np.append(imageVector, questionVector)
@@ -161,15 +165,16 @@ while newQuestion != 'no':
 			subanswer['answer_id'] = 1
 			annotation['answers'] = [answer]
 			annotation['image_id'] = randomAnn['image_id']
-			annotation['question_id'] = randomAnn['question_id']
+			annotation['question_id'] = questionIndex
 			annotation['answer_type'] = 'other'
 			outputAnnotations['annotations'].append(annotation)
 
 			question['image_id'] = randomAnn['image_id']
 			question['question'] = questionString
 			question['multiple_choices'] = []
-			question['question_id'] = randomAnn['question_id']
+			question['question_id'] = questionIndex
 			outputQuestions['questions'].append(question)
+			questionIndex += 1
 		newQuestion = raw_input('Do you want to add one more question to analysis? (no to stop): ')
 	# print randomAnn
 annotation_json_dump = json.dumps(outputAnnotations)
