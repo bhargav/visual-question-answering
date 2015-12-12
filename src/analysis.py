@@ -72,7 +72,7 @@ ids = vqaVal.getQuesIds()
 anns = vqaVal.loadQA(ids)
 
 
-if not os.path.exists(outputAnnotationFile):
+if not os.path.exists(outputAnnotationFile) or os.stat(outputAnnotationFile).st_size == 0:
 	outputQuestionWriter = open(outputQuestionFile, 'w')
 	outputAnnotationWriter = open(outputAnnotationFile, 'w')
 
