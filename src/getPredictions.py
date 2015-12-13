@@ -35,7 +35,7 @@ def evalResults():
 	dataDir2 = './../VQA'
 	taskType2 = 'MultipleChoice'
 	dataType2 = 'mscoco' # 'mscoco' for real and 'abstract_v002' for abstract
-	dataSubType2 = 'val2014'
+	dataSubType2 = 'analysis1'
 	annFile2 = '%s/Annotations/%s_%s_annotations.json' % (dataDir2, dataType2, dataSubType2)
 	quesFile2 = '%s/Questions/%s_%s_%s_questions.json' % (dataDir2, taskType2, dataType2, dataSubType2)
 	imgDir2 = '%s/Images/%s/%s/' % (dataDir2, dataType2, dataSubType2)
