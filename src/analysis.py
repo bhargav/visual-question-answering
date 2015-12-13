@@ -104,7 +104,7 @@ if not os.path.exists(outputAnnotationFile) or os.stat(outputAnnotationFile).st_
 	outputQuestions['task_type'] = taskType
 	outputQuestions['data_type'] = dataType
 	outputQuestions['license'] = {}
-	# outputQuestions['data_subtype'] = 'analysis1'
+	outputQuestions['data_subtype'] = 'analysis1'
 	outputQuestions['questions'] = []
 else:
 	outputQuestionWriter = open(outputQuestionFile)
@@ -114,11 +114,6 @@ else:
 	# annotations_json_reader = outputAnnotationWriter.read()
 	outputAnnotations = json.load(outputAnnotationWriter)
 
-
-modelReader = open('./model_definition_100iter.json')
-json_read = modelReader.read()
-model = model_from_json(json_read)
-model.load_weights('./model_weights_100iter.h5py')
 
 glove_word_vec_file = './../glove/glove.6B.300d.txt'
 word_vec_dict = ld.readGloveData(glove_word_vec_file)
@@ -144,12 +139,14 @@ while newQuestion != 'no':
 	predictedAnswer = answerFeatures[predictions[0]]
 	print 'Predicted Answer: ' + predictedAnswer
 	# temp_dict['answer'] = answerFeatures[predictions[0]]
-	if predictedAnswer != str(randomAnn['multiple_choice_answer']):
+	if predictedAnswer == str(randomAnn['multiple_choice_answer']):
 
 		print 'Image ID: ' + str(randomAnn['image_id'])
 		print 'Question: ' + str(vqaVal.qqa[randomAnn['question_id']]['question'])
 		print 'Answer: ' + str(randomAnn['multiple_choice_answer'])
 		quesNos = raw_input('How many questions do you want?:\n')
+		# if isinstance(,int) == False:
+		# 	quesNos = 0
 		for i in xrange(int(quesNos)):
 			annotation = {}
 			question = {}
@@ -163,7 +160,7 @@ while newQuestion != 'no':
 			subanswer['answer'] = answer
 			subanswer['answer_confidence'] = 'yes'
 			subanswer['answer_id'] = 1
-			annotation['answers'] = [answer]
+			annotation['answers'] = [subanswer]
 			annotation['image_id'] = randomAnn['image_id']
 			annotation['question_id'] = questionIndex
 			annotation['answer_type'] = 'other'

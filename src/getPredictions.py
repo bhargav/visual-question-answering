@@ -35,7 +35,7 @@ def evalResults():
 	dataDir2 = './../VQA'
 	taskType2 = 'MultipleChoice'
 	dataType2 = 'mscoco' # 'mscoco' for real and 'abstract_v002' for abstract
-	dataSubType2 = 'val2014'
+	dataSubType2 = 'analysis1'
 	annFile2 = '%s/Annotations/%s_%s_annotations.json' % (dataDir2, dataType2, dataSubType2)
 	quesFile2 = '%s/Questions/%s_%s_%s_questions.json' % (dataDir2, taskType2, dataType2, dataSubType2)
 	imgDir2 = '%s/Images/%s/%s/' % (dataDir2, dataType2, dataSubType2)
@@ -78,7 +78,7 @@ def evalResults():
 		predictions = model.predict_classes(x_test, verbose = False)
 		temp_dict['answer'] = answerFeatures[predictions[0]]
 		resultsDicts.append(temp_dict)
-	writer = open('./../Results/MultipleChoice_mscoco_val2014_second_results.json', 'w')
+	writer = open('./../Results/MultipleChoice_mscoco_analysis1_results.json', 'w')
 	json_dump = json.dumps(resultsDicts)
 	writer.write(json_dump)
 		
