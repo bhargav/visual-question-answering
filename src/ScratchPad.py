@@ -11,11 +11,18 @@ import argparse
 import lessdummy1 as utilities
 import cocoIDToFeatures as cocoImageUtils
 
+from keras.callbacks import EarlyStopping, ModelCheckpoint, History
+
+history = History()
+erl = EarlyStopping(monitor='val_loss', patience = 3)
+checkpoint = ModelCheckpoint(filepath="weights.{epoch:02d}-{val_loss:.2f}.hdf5", save_best_only=True)
+
 tfile = '../features/coco_vgg_IDMap.txt'
 
 args = {}
 args['answer_vector_file']='answer_feature_list.json'
 args['glove_file']='../glove/glove.6B.300d.txt'
+
 
 
 # In[2]:
@@ -65,7 +72,7 @@ for quesID, annotation in vqaVal.qa.iteritems():
     question_text = question['question'].strip().replace('?', ' ?').split()
     imgID = annotation['image_id']
     ansString = annotation['multiple_choice_answer']
-    
+
     dataset.append({'question': question_text, 'answer': ansString, 'image': imgID})
 
 
@@ -99,6 +106,10 @@ from lstm_single_answer import LSTMSingleAnswerModel
 lstm_model = LSTMSingleAnswerModel()
 model = lstm_model.getModel(4096, 300, 1000)
 
+json_string = model.to_json()
+fil = open('model_file.json', 'w')
+fil.write(json_string)
+fil.close()
 
 # **Generating X_train and Y_train**
 
@@ -130,20 +141,11 @@ def transformToModelInput(self, dataset, answerFeatureVector, word_vec_dict):
 
         return ([Image_train, X_train], Y_train)
 
-
 # In[ ]:
 
 (X_train, Y_train) = transformToModelInput(lstm_model, dataset, answerFeatureVector, word_vec_dict)
 
-model.fit(X_train, Y_train, nb_epoch=5, validation_split=0.1, show_accuracy=True, verbose=1)
+model.fit(X_train, Y_train, nb_epoch=100, validation_split=0.1, callbacks=[checkpoint, erl, history])
 
 
-# In[ ]:
-
-
-
-
-# In[ ]:
-
-
-
+model.save_weights('final.hdf5')
