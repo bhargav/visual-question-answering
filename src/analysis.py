@@ -5,6 +5,7 @@ import sys
 import json
 import random
 import os
+import pickle
 import lessdummy1 as ld
 import os.path
 from keras.models import Sequential, model_from_json
@@ -64,7 +65,7 @@ vqaVal = VQA(annFile2, quesFile2)
 
 newdataSubType = 'analysis1'
 outputQuestionFile = '%s/Questions/%s_%s_%s_questions.json'%(dataDir, taskType, dataType, newdataSubType)
-outputAnnotationFile = '%s/Annotations/%s_%s_questions.json'%(dataDir, dataType, newdataSubType)
+outputAnnotationFile = '%s/Annotations/%s_%s_annotations.json'%(dataDir, dataType, newdataSubType)
 # vqaAnalysis = vqaVal
 newQuestion = 'yes'
 questionIndex = 0
@@ -174,6 +175,10 @@ while newQuestion != 'no':
 			questionIndex += 1
 		newQuestion = raw_input('Do you want to add one more question to analysis? (no to stop): ')
 	# print randomAnn
+dfile = open('questionAnnotationDump.txt','w')
+pickle.dump(outputAnnotations,dfile)
+pickle.dump(outputQuestions,dfile)
+dfile.close
 annotation_json_dump = json.dumps(outputAnnotations)
 question_json_dump = json.dumps(outputQuestions)
 outputQuestionWriter.write(question_json_dump)
