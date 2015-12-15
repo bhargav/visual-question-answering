@@ -11,18 +11,19 @@ import argparse
 import lessdummy1 as utilities
 import cocoIDToFeatures as cocoImageUtils
 
+from keras.models import Sequential, model_from_json
+from keras.layers.core import Dense, Dropout, Reshape, Merge, RepeatVector
+from keras.layers.recurrent import LSTM
 from keras.callbacks import EarlyStopping, ModelCheckpoint, History
 
 history = History()
-erl = EarlyStopping(monitor='val_loss', patience = 3)
-checkpoint = ModelCheckpoint(filepath="weights.{epoch:02d}-{val_loss:.2f}.hdf5", save_best_only=True)
+checkpoint = ModelCheckpoint(filepath="SecondTry/weights.{epoch:02d}-{val_loss:.2f}.hdf5", save_best_only=False)
 
 tfile = '../features/coco_vgg_IDMap.txt'
 
 args = {}
 args['answer_vector_file']='answer_feature_list.json'
 args['glove_file']='../glove/glove.6B.300d.txt'
-
 
 
 # In[2]:
@@ -88,12 +89,10 @@ print "Max Question Length = ", maxlen
 
 # In[6]:
 
-maxlen = 25
 nb_train = len(dataset)
-nb_timestep = maxlen + 1 # For Image Vector
+nb_timestep = 23 # For Image Vector
 word_vec_dim = len(word_vec_dict['hi'])
 image_dim = 4096
-
 
 # ### Building the LSTM Model###
 
@@ -101,51 +100,73 @@ image_dim = 4096
 
 # In[7]:
 
-from lstm_single_answer import LSTMSingleAnswerModel
+def getModel(image_size, question_vector_size, answer_vector_size = 1000, hidden_layer_size = 1000, lstm_layer_size = 1000):
+    nb_timestep = 23
+    imageModel = Sequential()
+    imageModel.add(Reshape(input_shape=(image_size,), dims=(image_size, )))
 
-lstm_model = LSTMSingleAnswerModel()
-model = lstm_model.getModel(4096, 300, 1000)
+    questionModel = Sequential()
+    questionModel.add(LSTM(lstm_layer_size, input_shape=(nb_timestep, question_vector_size), return_sequences=True))
+    questionModel.add(Dropout(0.2))
+    questionModel.add(LSTM(lstm_layer_size, return_sequences=False))
+    questionModel.add(Dropout(0.2))
 
-json_string = model.to_json()
-fil = open('model_file.json', 'w')
-fil.write(json_string)
-fil.close()
+    # Concatinate Image and Question Models
+    model = Sequential()
+    model.add(Merge([imageModel, questionModel], mode='concat'))
+
+    model.add(Dense(hidden_layer_size, init='uniform', activation='tanh'))
+    model.add(Dropout(0.2))
+
+    model.add(Dense(answer_vector_size, init='uniform', activation='softmax'))
+
+    model.compile(loss='categorical_crossentropy', optimizer='rmsprop')
+
+    return model
+
+
+try:
+    lstm_model = getModel(4096, 300, 1000)
+    lstm_model.load_weights('weights.hdf5')
+except:
+    print "Failed to load model weights"
+    lstm_model = getModel(4096, 300, 1000)
 
 # **Generating X_train and Y_train**
 
 # In[8]:
 
-def transformToModelInput(self, dataset, answerFeatureVector, word_vec_dict):
-        nb_train = len(dataset)
-        input_size = 300
-        X_train = np.zeros(shape=(nb_train, self.nb_timestep, input_size))
-        Image_train = np.zeros(shape=(nb_train, 4096))
-        Y_train = np.zeros(shape=(nb_train, len(answerFeatureVector)))
+def transformToModelInput(dataset, answerFeatureVector, word_vec_dict):
+    nb_train = len(dataset)
+    input_size = 300
+    X_train = np.zeros(shape=(nb_train, nb_timestep, input_size))
+    Image_train = np.zeros(shape=(nb_train, 4096))
+    Y_train = np.zeros(shape=(nb_train, len(answerFeatureVector)))
 
-        maxlen = self.nb_timestep
+    maxlen = nb_timestep
 
-        idx = 0
-        for input_item in dataset:
-            q = input_item['question']
-            padding = maxlen - len(q)
-            for i in xrange(padding):
-                X_train[idx, i, :] = np.zeros(input_size)
+    idx = 0
+    for input_item in dataset:
+        q = input_item['question']
+        padding = maxlen - len(q)
+        for i in xrange(padding):
+            X_train[idx, i, :] = np.zeros(input_size)
 
-            for word in q:
-                X_train[idx, padding, :] = utilities.getWordVector(word, word_vec_dict)
-            Y_train[idx, :] = utilities.getAnswerVector(input_item['answer'], answerFeatureVector)
+        for word in q:
+            X_train[idx, padding, :] = utilities.getWordVector(word, word_vec_dict)
+        Y_train[idx, :] = utilities.getAnswerVector(input_item['answer'], answerFeatureVector)
 
-            Image_train[idx, :] = np.asarray(feats[:, imageDict[input_item['image']]])
+        Image_train[idx, :] = np.asarray(feats[:, imageDict[input_item['image']]])
 
-            idx += 1
+        idx += 1
 
-        return ([Image_train, X_train], Y_train)
+    return ([Image_train, X_train], Y_train)
 
 # In[ ]:
 
 (X_train, Y_train) = transformToModelInput(lstm_model, dataset, answerFeatureVector, word_vec_dict)
 
-model.fit(X_train, Y_train, nb_epoch=100, validation_split=0.1, callbacks=[checkpoint, erl, history])
+model.fit(X_train, Y_train, nb_epoch=100, validation_split=0.1, callbacks=[checkpoint, history])
 
 
 model.save_weights('final.hdf5')
