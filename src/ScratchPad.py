@@ -124,10 +124,11 @@ def getModel(image_size, question_vector_size, answer_vector_size = 1000, hidden
 
     return model
 
+print "Building LSTM model"
 
 try:
     lstm_model = getModel(4096, 300, 1000)
-    lstm_model.load_weights('weights.hdf5')
+    #lstm_model.load_weights('weights.hdf5')
 except:
     print "Failed to load model weights"
     lstm_model = getModel(4096, 300, 1000)
@@ -164,9 +165,14 @@ def transformToModelInput(dataset, answerFeatureVector, word_vec_dict):
 
 # In[ ]:
 
-(X_train, Y_train) = transformToModelInput(lstm_model, dataset, answerFeatureVector, word_vec_dict)
+print "Extracting Features from Input"
 
-model.fit(X_train, Y_train, nb_epoch=100, validation_split=0.1, callbacks=[checkpoint, history])
+(X_train, Y_train) = transformToModelInput(dataset, answerFeatureVector, word_vec_dict)
 
+print "Training LSTM"
+
+lstm_model.fit(X_train, Y_train, nb_epoch=100, validation_split=0.1, callbacks=[checkpoint, history])
+
+print "Saving weights"
 
 model.save_weights('final.hdf5')
